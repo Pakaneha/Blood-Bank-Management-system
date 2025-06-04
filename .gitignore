@@ -1,2 +1,18 @@
 *.exe
 *.gch
+# Don't save compiled files
+*.exe
+*.o
+*.obj
+
+# Don't save temporary files  
+*.tmp
+*.log
+
+# Don't save IDE settings
+.vscode/
+.idea/
+
+# Don't save system files
+.DS_Store
+Thumbs.db
