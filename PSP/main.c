@@ -6,17 +6,22 @@
 int main() {
     int choice;
     char blood_group[5];
-    int quantity,blood_bank;
+    int quantity;
+    
+    printf("=== Blood Bank Management System ===\n");
+    
     while (1) {
+        printf("\n--- Main Menu ---\n");
         printf("1. Add donor\n");
         printf("2. Find highest donor grade\n");
         printf("3. Add acceptor\n");
         printf("4. Search donor by blood group\n");
         printf("5. Accept blood\n");
-        printf("6. Print blood bank\n");
+        printf("6. Print blood bank inventory\n");
         printf("7. Exit\n");
         printf("Enter your choice: ");
         scanf("%d", &choice);
+        
         switch (choice) {
             case 1:
                 add_donor();
@@ -38,9 +43,13 @@ int main() {
                 accept_blood(blood_group, quantity);
                 break;
             case 6:
+                print_blood_bank();
+                break;
+            case 7:
+                printf("Thank you for using Blood Bank Management System!\n");
                 exit(0);
             default:
-                printf("Invalid choice\n");
+                printf("Invalid choice! Please enter a number between 1-7.\n");
         }
     }
     return 0;
