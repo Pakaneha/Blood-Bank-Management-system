@@ -2,34 +2,9 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include "functions.h"
 
-const char* calculate_donation_grade(int quantity);
-void add_donor();
-void find_highest_donor_grade();
-void add_acceptor();
-void search_donor();
-void accept_blood(char* blood_group, int quantity);
-void fix_errors();
-
-struct donor {
-    char name[50];
-    int age;
-    char blood_group[5];
-    char phone[15];
-    int quantity;
-    int donation_date;
-    char grade[20];
-};
-
-struct acceptor {
-    char name[50];
-    int age;
-    char blood_group[5];
-    char phone[15];
-    int quantity;
-    int acceptance_date;
-};
-
+// Global blood bank array definition
 int blood_bank[8] = {0};
 
 const char* calculate_donation_grade(int quantity) {
@@ -67,6 +42,26 @@ void add_donor() {
     strcpy(d.grade, calculate_donation_grade(d.quantity));
     fprintf(fp, "%s %d %s %s %d %d %s\n", d.name, d.age, d.blood_group, d.phone, d.quantity, d.donation_date, d.grade);
     fclose(fp);
+    
+    // Update blood bank inventory
+    if (strcmp(d.blood_group, "A+") == 0) {
+        blood_bank[0] += 1;
+    } else if (strcmp(d.blood_group, "A-") == 0) {
+        blood_bank[1] += 1;
+    } else if (strcmp(d.blood_group, "B+") == 0) {
+        blood_bank[2] += 1;
+    } else if (strcmp(d.blood_group, "B-") == 0) {
+        blood_bank[3] += 1;
+    } else if (strcmp(d.blood_group, "AB+") == 0) {
+        blood_bank[4] += 1;
+    } else if (strcmp(d.blood_group, "AB-") == 0) {
+        blood_bank[5] += 1;
+    } else if (strcmp(d.blood_group, "O+") == 0) {
+        blood_bank[6] += 1;
+    } else if (strcmp(d.blood_group, "O-") == 0) {
+        blood_bank[7] += 1;
+    }
+    
     printf("Donor added successfully\n");
 }
 
@@ -78,9 +73,12 @@ void find_highest_donor_grade() {
         return;
     }
     struct donor d;
-    char highest_grade[20] = "";
+    char highest_grade[20] = "Bronze"; // Initialize with lowest grade
+    int max_quantity = 0;
+    
     while (fscanf(fp, "%s %d %s %s %d %d %s", d.name, &d.age, d.blood_group, d.phone, &d.quantity, &d.donation_date, d.grade) != EOF) {
-        if (strcmp(d.grade, highest_grade) > 0) {
+        if (d.quantity > max_quantity) {
+            max_quantity = d.quantity;
             strcpy(highest_grade, d.grade);
         }
     }
@@ -108,9 +106,10 @@ void add_acceptor() {
     scanf("%d", &a.quantity);
     printf("Enter acceptance date (days ago): ");
     scanf("%d", &a.acceptance_date);
-    fprintf(fp, "%s %d %s %s %d %d %s\n", a.name, a.age, a.blood_group, a.phone, a.quantity, a.acceptance_date);
+    fprintf(fp, "%s %d %s %s %d %d\n", a.name, a.age, a.blood_group, a.phone, a.quantity, a.acceptance_date);
     fclose(fp);
     printf("Acceptor added successfully\n");
+}
 
 void search_donor() {
     char blood_group[5];
@@ -124,9 +123,11 @@ void search_donor() {
     }
     struct donor d;
     int found = 0;
+    printf("\n--- Donors with blood group %s ---\n", blood_group);
     while (fscanf(fp, "%s %d %s %s %d %d %s", d.name, &d.age, d.blood_group, d.phone, &d.quantity, &d.donation_date, d.grade) != EOF) {
         if (strcmp(d.blood_group, blood_group) == 0) {
-            printf("Name: %s\nAge: %d\nBlood Group: %s\nPhone: %s\nQuantity: %d\nDonation Date: %d\nGrade: %s\n", d.name, d.age, d.blood_group, d.phone, d.quantity, d.donation_date, d.grade);
+            printf("Name: %s\nAge: %d\nBlood Group: %s\nPhone: %s\nQuantity: %d ml\nDonation Date: %d days ago\nGrade: %s\n\n", 
+                   d.name, d.age, d.blood_group, d.phone, d.quantity, d.donation_date, d.grade);
             found = 1;
         }
     }
@@ -138,24 +139,28 @@ void search_donor() {
 
 void accept_blood(char* blood_group, int quantity) {
     FILE* fp1, * fp2;
-    fp1 = fopen("donors.txt", "r+");
+    fp1 = fopen("donors.txt", "r");
     fp2 = fopen("acceptors.txt", "a");
     if (fp1 == NULL || fp2 == NULL) {
         printf("Error opening file\n");
         return;
     }
+    
     struct donor d;
     struct acceptor a;
     int found = 0;
-    int pos;
+    
+    // Search for a compatible donor
     while (fscanf(fp1, "%s %d %s %s %d %d %s", d.name, &d.age, d.blood_group, d.phone, &d.quantity, &d.donation_date, d.grade) != EOF) {
         if (strcmp(d.blood_group, blood_group) == 0 && d.quantity >= quantity) {
             found = 1;
-            pos = ftell(fp1);
             break;
         }
     }
+    fclose(fp1);
+    
     if (found == 1) {
+        printf("Compatible donor found: %s\n", d.name);
         printf("Enter acceptor name: ");
         scanf("%s", a.name);
         printf("Enter acceptor age: ");
@@ -166,15 +171,12 @@ void accept_blood(char* blood_group, int quantity) {
         a.quantity = quantity;
         printf("Enter acceptance date (days ago): ");
         scanf("%d", &a.acceptance_date);
-        strcpy(a.grade, calculate_donation_grade(a.quantity));
-        fprintf(fp2, "%s %d %s %s %d %d %s\n", a.name, a.age, a.blood_group, a.phone, a.quantity, a.acceptance_date, a.grade);
+        
+        fprintf(fp2, "%s %d %s %s %d %d\n", a.name, a.age, a.blood_group, a.phone, a.quantity, a.acceptance_date);
         fclose(fp2);
         printf("Acceptor added successfully\n");
-        d.quantity -= quantity;
-        fseek(fp1, pos, SEEK_SET);
-        fprintf(fp1, "%s %d %s %s %d %d %s\n", d.name, d.age, d.blood_group, d.phone, d.quantity, d.donation_date, d.grade);
-        fclose(fp1);
-        printf("Donor updated successfully\n");
+        
+        // Update blood bank inventory
         if (strcmp(blood_group, "A+") == 0) {
             blood_bank[0] -= 1;
         } else if (strcmp(blood_group, "A-") == 0) {
@@ -194,10 +196,13 @@ void accept_blood(char* blood_group, int quantity) {
         }
         printf("Blood bank updated successfully\n");
     } else {
-        printf("No compatible donor found\n");
+        printf("No compatible donor found with sufficient quantity\n");
     }
-    void print_blood_bank() {
-    printf("Blood Group\tPackets\n");
+}
+
+void print_blood_bank() {
+    printf("\n--- Blood Bank Inventory ---\n");
+    printf("Blood Group\tPackets Available\n");
     printf("A+\t\t%d\n", blood_bank[0]);
     printf("A-\t\t%d\n", blood_bank[1]);
     printf("B+\t\t%d\n", blood_bank[2]);
@@ -206,6 +211,5 @@ void accept_blood(char* blood_group, int quantity) {
     printf("AB-\t\t%d\n", blood_bank[5]);
     printf("O+\t\t%d\n", blood_bank[6]);
     printf("O-\t\t%d\n", blood_bank[7]);
-}
-
+    printf("---------------------------\n");
 }
